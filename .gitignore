@@ -1,0 +1,11 @@
+# Model weights are distributed via Google Drive (see README), not git
+*.pth
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Inference outputs
+outputs/
+*_output/

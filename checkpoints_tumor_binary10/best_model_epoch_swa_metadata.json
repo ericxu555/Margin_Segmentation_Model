@@ -1,0 +1,41 @@
+{
+  "num_classes": 2,
+  "task": "tumor_binary",
+  "architecture": "UNet-RESNET34",
+  "input_size": [
+    512,
+    512
+  ],
+  "output_size": [
+    512,
+    512
+  ],
+  "encoder": "resnet34",
+  "tumor_pixel_fraction": 0.1483324025874735,
+  "train_frames": 497,
+  "val_frames": 61,
+  "training_config": {
+    "optimizer": "Adam",
+    "learning_rate": 0.0005,
+    "weight_decay": 5e-05,
+    "scheduler": "CosineAnnealing",
+    "swa_start": 50,
+    "grad_clip": 1.0,
+    "loss_function": "Focal(gamma=2.0) + Tversky(alpha=0.3,beta=0.7) + 1.0xBoundary(sigma=3.0)",
+    "tumor_weight": 2.0,
+    "tversky_alpha": 0.3,
+    "tversky_beta": 0.7,
+    "boundary_sigma": 3.0,
+    "boundary_weight": 1.0,
+    "rotation_degrees": 20,
+    "warmup_epochs": 12,
+    "patience": 35,
+    "batch_size": 8,
+    "val_split": 0.1,
+    "test_split": 0.1
+  },
+  "best_epoch": "swa_from_50",
+  "val_loss": 0.05413106409832835,
+  "val_tumor_dice": 0.9764127656817436,
+  "model_checksum": "e8de609adee8077b1b0d2f45d467abd3aa419503aa0734f1c2059519f2e4c692"
+}
