@@ -303,6 +303,87 @@ smoothing, and frame ranges:
 python infer_sam2_red.py --help
 ```
 
+## Real-time use with ROS 2
+
+`ros_margin_node.py` runs the same two models against a live camera topic
+instead of a folder of frames, publishing the margin drawn over the endoscopic
+image as it arrives.
+
+Unlike the toolhead-following pipeline, this model is stateless per frame: each
+frame gets its own margin mask, with only the EMA carried across frames. There
+is no episode to bracket, so the node has no start/stop services. It segments
+and publishes continuously from launch.
+
+### Interface
+
+| | |
+| --- | --- |
+| Subscribes | `/ves_camera/image` (`sensor_msgs/Image`) |
+| Publishes | `/margin/overlay` (`sensor_msgs/Image`), the margin drawn on the live frame |
+| | `/margin/mask` (`sensor_msgs/Image`, mono8), 255 = margin |
+
+### Running it
+
+```bash
+python3 ros_margin_node.py
+```
+
+View the result:
+
+```bash
+ros2 run rqt_image_view rqt_image_view /margin/overlay
+```
+
+That is the whole workflow. The overlay goes live as soon as frames arrive.
+
+### Parameters
+
+```bash
+python3 ros_margin_node.py --ros-args \
+    -p image_topic:=/ves_camera/image_rect \
+    -p threshold:=0.5
+```
+
+| Parameter | Default | Purpose |
+| --- | --- | --- |
+| `image_topic` | `/ves_camera/image` | Camera topic to subscribe to |
+| `threshold` | `0.6` | Confidence a pixel needs to be called margin |
+| `ema_alpha` | `0.3` | Temporal smoothing of the confidence map; `1.0` disables it |
+| `spatial_dilate` | `20` | Dilation of the Stage 1 tumor mask before gating |
+| `proc_size` | `540` | Frames are resized to this before processing, matching training |
+| `device` | `cuda` | Use `cpu` if no GPU is available |
+
+The defaults reproduce `run_margin.py` exactly, so the live output matches what
+the offline pipeline produces on the same footage.
+
+### Resolution
+
+The models were trained on 540x540 frames. If the camera publishes at a
+different resolution (the reference system publishes 1080x1080), every frame is
+downscaled to `proc_size` before processing, and the overlay and mask are
+published back at the camera's native resolution.
+
+### Keeping up with the camera
+
+Frames arriving while one is still being processed are dropped rather than
+queued, so the overlay stays aligned with what the camera is showing instead of
+falling progressively behind. The node logs how many frames it has processed
+and dropped every ten seconds. Both stages together run at roughly 8 frames per
+second on a CUDA GPU, so on a 30 fps camera expect most frames to be skipped.
+
+### Requirements
+
+Beyond the setup above, this needs a ROS 2 installation (developed against
+Jazzy) with `rclpy` and `sensor_msgs` importable from the same Python
+environment as PyTorch:
+
+```bash
+python3 -c "import rclpy, sensor_msgs; print('ros ok')"
+python3 -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+```
+
+Both must succeed from the same interpreter.
+
 ## Troubleshooting
 
 **`No matching distribution found for torch==...+cu128`.** The CUDA builds of
@@ -342,6 +423,7 @@ src/                          segmentation model and inference engine
   visualization.py            overlay rendering
   model_persistence.py        checkpoint loading and checksum verification
 run_margin.py                 end-to-end driver: both stages, then the video
+ros_margin_node.py            ROS 2 node: same pipeline on a live camera topic
 infer_sam2_red.py             inference script the wrapper calls
 frames_to_video.py            renders overlay frames into an .mp4
 checkpoints_margin58/         margin weights (Stage 2)
