@@ -1,0 +1,14 @@
+# Install PyTorch first, matching your CUDA version, from https://pytorch.org
+# It is deliberately unpinned here: the +cuXXX builds are not published on
+# PyPI, so pinning one makes this whole file fail to install.
+torch
+torchvision
+
+# Minimums rather than exact pins, so this installs on a range of setups.
+# Developed and tested against smp 0.5.0, opencv 5.0.0, numpy 2.2.6,
+# pillow 12.2.0, scipy 1.17.1.
+segmentation-models-pytorch>=0.3.3
+opencv-python>=4.8
+numpy>=1.24
+pillow>=9.5
+scipy>=1.10

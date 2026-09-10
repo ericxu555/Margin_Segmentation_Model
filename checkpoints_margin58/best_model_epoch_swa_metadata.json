@@ -1,0 +1,33 @@
+{
+  "num_classes": 2,
+  "task": "red_binary",
+  "architecture": "UNet-RESNET34",
+  "input_size": [
+    512,
+    512
+  ],
+  "output_size": [
+    512,
+    512
+  ],
+  "encoder": "resnet34",
+  "red_pixel_fraction": 0.020872225882322987,
+  "train_frames": 345,
+  "val_frames": 86,
+  "training_config": {
+    "optimizer": "Adam",
+    "learning_rate": 0.0003,
+    "scheduler": "plateau",
+    "loss_function": "Focal(gamma=2.75) + Tversky(alpha=0.10,beta=0.9) + 1.0\u00d7Boundary(sigma=3.0)",
+    "red_weight": 5.0,
+    "warmup_epochs": 12,
+    "patience": 35,
+    "batch_size": 8,
+    "pretrained_checkpoint": null,
+    "freeze_encoder": false
+  },
+  "best_epoch": "swa_from_35",
+  "val_loss": 0.1579951738769358,
+  "val_red_dice": 0.8416714722459967,
+  "model_checksum": "46ee363eb2a51c9859757a2a935385858a27c90e0a3f4e8ca505d31f320dcf14"
+}
