@@ -4,13 +4,13 @@
 #   ./run_all.sh              full recording: videos + per-frame masks
 #   ./run_all.sh --last-only  only each episode's final overlay and mask
 #
-# Two processes, not three: the margin node already runs binary10swa as its
+# Two processes, not three: the margin node already runs binary11swa as its
 # Stage 1 to gate the margin, so the tumor segmentation comes from the same
 # forward pass rather than a second copy of the weights.
 #
 #   toolhead node   /toolhead/overlay  /toolhead/mask   cumulative resection
 #   margin node     /margin/overlay    /margin/mask     margin
-#                   /tumor/overlay     /tumor/mask      tumor (binary10swa)
+#                   /tumor/overlay     /tumor/mask      tumor (binary11swa)
 #
 # Both watch the same joint topic, so one press of the cut button brackets an
 # episode in both and each writes to its own output directory. Ctrl-C stops

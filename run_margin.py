@@ -3,10 +3,9 @@
 This is a thin wrapper around infer_sam2_red.py that fills in the validated
 settings for the margin model, so there is nothing to remember:
 
-  Stage 1  checkpoints_tumor_binary10/best_model_epoch_swa.pth
-           Full-tumor segmentation. Its output is dilated by 20 px and used
-           as a spatial constraint, so the margin can only be predicted on or
-           near the tumor.
+  Stage 1  checkpoints_tumor_binary11/best_model_epoch_swa.pth
+           Full-tumor segmentation. Its mask is used as a spatial
+           constraint, so the margin can only be predicted on the tumor.
 
   Stage 2  checkpoints_margin58/best_model_epoch_swa.pth
            Margin segmentation. Predicts the uncharred region between the
@@ -41,9 +40,9 @@ The exact command this wrapper runs:
         --output-dir <output_dir> \
         --threshold 0.6 \
         --blend-ema-alpha 0.3 \
-        --spatial-model checkpoints_tumor_binary10/best_model_epoch_swa.pth \
-        --spatial-metadata checkpoints_tumor_binary10/best_model_epoch_swa_metadata.json \
-        --spatial-dilate 20 \
+        --spatial-model checkpoints_tumor_binary11/best_model_epoch_swa.pth \
+        --spatial-metadata checkpoints_tumor_binary11/best_model_epoch_swa_metadata.json \
+        --spatial-dilate 0 \
         --device cuda \
         --visualize
 """
@@ -60,9 +59,9 @@ MARGIN_MODEL = os.environ.get(
 MARGIN_META = os.environ.get(
     "MARGIN_META", os.path.join(HERE, "checkpoints_margin58", "best_model_epoch_swa_metadata.json"))
 TUMOR_MODEL = os.environ.get(
-    "SPATIAL_MODEL", os.path.join(HERE, "checkpoints_tumor_binary10", "best_model_epoch_swa.pth"))
+    "SPATIAL_MODEL", os.path.join(HERE, "checkpoints_tumor_binary11", "best_model_epoch_swa.pth"))
 TUMOR_META = os.environ.get(
-    "SPATIAL_META", os.path.join(HERE, "checkpoints_tumor_binary10", "best_model_epoch_swa_metadata.json"))
+    "SPATIAL_META", os.path.join(HERE, "checkpoints_tumor_binary11", "best_model_epoch_swa_metadata.json"))
 
 FPS = 30            # frame rate of the rendered output video
 
@@ -131,7 +130,7 @@ def main():
         for m in missing:
             print(f"  {m}")
         print("\nDownload them from the Google Drive link in the README and place")
-        print("them in the checkpoints_margin58/ and checkpoints_tumor_binary10/ folders.")
+        print("them in the checkpoints_margin58/ and checkpoints_tumor_binary11/ folders.")
         raise SystemExit(1)
 
     cmd = [
@@ -145,7 +144,7 @@ def main():
         "--blend-ema-alpha", "0.3",
         "--spatial-model", TUMOR_MODEL,
         "--spatial-metadata", TUMOR_META,
-        "--spatial-dilate", "20",
+        "--spatial-dilate", "0",
         "--device", "cuda",
         "--visualize",
     ]

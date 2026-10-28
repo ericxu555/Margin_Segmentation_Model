@@ -17,7 +17,7 @@ Run:
     python3 ros_margin_node.py --ros-args -p image_topic:=/ves_camera/image_rect
 
 The pipeline matches run_margin.py exactly: Stage 1 segments the tumor and is
-dilated by 20 px to constrain where the margin may appear; Stage 2 segments the
+used as is (no dilation) to constrain where the margin may appear; Stage 2 segments the
 margin at 0.6 confidence, EMA-smoothed with alpha 0.3, then ANDed with the
 Stage 1 mask.
 """
@@ -60,16 +60,16 @@ PROC_SIZE = 540
 # Inference settings, identical to run_margin.py's validated defaults.
 THRESHOLD = 0.6          # confidence a pixel needs to be called margin
 EMA_ALPHA = 0.3          # temporal smoothing of the confidence map
-SPATIAL_DILATE = 20      # dilation of the Stage 1 tumor mask before gating
+SPATIAL_DILATE = 0       # dilation of the Stage 1 tumor mask before gating (0: the mask itself, as evaluated)
 
 MARGIN_MODEL = os.environ.get(
     "MARGIN_MODEL", os.path.join(HERE, "checkpoints_margin58", "best_model_epoch_swa.pth"))
 MARGIN_META = os.environ.get(
     "MARGIN_META", os.path.join(HERE, "checkpoints_margin58", "best_model_epoch_swa_metadata.json"))
 TUMOR_MODEL = os.environ.get(
-    "SPATIAL_MODEL", os.path.join(HERE, "checkpoints_tumor_binary10", "best_model_epoch_swa.pth"))
+    "SPATIAL_MODEL", os.path.join(HERE, "checkpoints_tumor_binary11", "best_model_epoch_swa.pth"))
 TUMOR_META = os.environ.get(
-    "SPATIAL_META", os.path.join(HERE, "checkpoints_tumor_binary10", "best_model_epoch_swa_metadata.json"))
+    "SPATIAL_META", os.path.join(HERE, "checkpoints_tumor_binary11", "best_model_epoch_swa_metadata.json"))
 
 MASK_COLOR_BGR = (0, 0, 255)   # red, matching the offline pipeline
 TUMOR_COLOR_BGR = (255, 128, 0)  # blue, to read apart from the red margin
@@ -205,7 +205,7 @@ class MarginNode(Node):
         The dilated mask gates the margin -- widening it lets the margin sit
         slightly outside the predicted tumor edge. The raw mask is the model's
         actual boundary and is what gets published and recorded; saving the
-        dilated one would overstate the tumor by 20 px.
+        dilated one would overstate the tumor by the dilation.
         """
         rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
         probs, _ = self.tumor_engine.predict_single(rgb)

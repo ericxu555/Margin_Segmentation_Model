@@ -776,12 +776,12 @@ def parse_arguments():
     parser.add_argument(
         '--spatial-model',
         type=str,
-        default='checkpoints_tumor_binary10/best_model_epoch_swa.pth',
+        default='checkpoints_tumor_binary11/best_model_epoch_swa.pth',
         help=(
             'Path to a multi-class model (e.g. epoch 60) used as a spatial constraint. '
             'Any pixel predicted as non-background by this model defines the allowed '
             'tumor region. Red predictions outside this region are suppressed. '
-            'Defaults to binary10 SWA; pass --no-spatial-constraint to disable.'
+            'Defaults to binary11 SWA; pass --no-spatial-constraint to disable.'
         ),
     )
     parser.add_argument(
@@ -792,7 +792,7 @@ def parse_arguments():
     parser.add_argument(
         '--spatial-metadata',
         type=str,
-        default='checkpoints_tumor_binary10/best_model_epoch_swa_metadata.json',
+        default='checkpoints_tumor_binary11/best_model_epoch_swa_metadata.json',
         help='Metadata JSON for --spatial-model.',
     )
     parser.add_argument(

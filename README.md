@@ -14,8 +14,8 @@ all still scores 98 percent pixel accuracy.
 ## Pipeline overview
 
 1. **Full-tumor segmentation (Stage 1).** A U-Net with a ResNet-34 encoder
-   segments the entire tumor in every frame. Its output is dilated by 20 pixels
-   and used as a spatial constraint, so the margin can only be reported on or
+   segments the entire tumor in every frame. Its mask is used as a spatial
+   constraint, so the margin can only be reported on or
    near the tumor.
 2. **Margin segmentation (Stage 2).** A second U-Net with the same architecture
    segments the uncharred margin, thresholded at 0.6 confidence.
@@ -96,7 +96,7 @@ used by the toolhead-following pipeline, from the same folder:
 > https://drive.google.com/drive/folders/18w_LTyrIgShmxdWPbZUZF8BunnrfqyQo
 
 ```
-checkpoints_tumor_binary10/
+checkpoints_tumor_binary11/
   best_model_epoch_swa.pth
   best_model_epoch_swa_metadata.json
 ```
@@ -125,8 +125,8 @@ defaults.
 | --- | --- | --- |
 | `MARGIN_MODEL` | `checkpoints_margin58/best_model_epoch_swa.pth` | Margin weights (Stage 2) |
 | `MARGIN_META` | `checkpoints_margin58/best_model_epoch_swa_metadata.json` | Margin metadata |
-| `SPATIAL_MODEL` | `checkpoints_tumor_binary10/best_model_epoch_swa.pth` | Tumor weights (Stage 1) |
-| `SPATIAL_META` | `checkpoints_tumor_binary10/best_model_epoch_swa_metadata.json` | Tumor metadata |
+| `SPATIAL_MODEL` | `checkpoints_tumor_binary11/best_model_epoch_swa.pth` | Tumor weights (Stage 1) |
+| `SPATIAL_META` | `checkpoints_tumor_binary11/best_model_epoch_swa_metadata.json` | Tumor metadata |
 
 ```bash
 export MARGIN_MODEL=/path/to/best_model_epoch_swa.pth
@@ -137,12 +137,12 @@ export MARGIN_META=/path/to/best_model_epoch_swa_metadata.json
 
 | | Stage 1: full tumor | Stage 2: margin |
 | --- | --- | --- |
-| Checkpoint | `binary10` SWA | `margin58` SWA |
+| Checkpoint | `binary11` SWA | `margin58` SWA |
 | Architecture | U-Net / ResNet-34 | U-Net / ResNet-34 |
 | Input | 512x512, 2-class | 512x512, 2-class |
-| Training frames | 497 train / 61 val | 345 train / 86 val |
-| Target pixel fraction | 14.8% | 2.09% |
-| Validation Dice | 0.976 | 0.842 |
+| Training frames | 511 train / 63 val | 345 train / 86 val |
+| Target pixel fraction | 15.0% | 2.09% |
+| Validation Dice | 0.973 | 0.842 |
 | Out-of-distribution Dice | 0.934 | not measured |
 
 Both checkpoints are SWA averages, Stage 1 from epoch 50 and Stage 2 from
@@ -260,9 +260,9 @@ python infer_sam2_red.py \
     --output-dir <output_dir> \
     --threshold 0.6 \
     --blend-ema-alpha 0.3 \
-    --spatial-model checkpoints_tumor_binary10/best_model_epoch_swa.pth \
-    --spatial-metadata checkpoints_tumor_binary10/best_model_epoch_swa_metadata.json \
-    --spatial-dilate 20 \
+    --spatial-model checkpoints_tumor_binary11/best_model_epoch_swa.pth \
+    --spatial-metadata checkpoints_tumor_binary11/best_model_epoch_swa_metadata.json \
+    --spatial-dilate 0 \
     --device cuda \
     --visualize
 ```
@@ -274,7 +274,7 @@ Running that directly gives an identical result, minus the video.
 | `--no-sam2` | on | SAM2 drifts on this target, so inference is per-frame |
 | `--threshold` | 0.6 | Confidence needed to call a pixel margin |
 | `--blend-ema-alpha` | 0.3 | EMA temporal smoothing of the confidence map, which suppresses flicker. `1.0` disables it |
-| `--spatial-dilate` | 20 | Dilation of the Stage 1 tumor mask before gating, so the margin at the tumor edge is not clipped |
+| `--spatial-dilate` | 0 | Dilation of the Stage 1 tumor mask before gating; raise it if the margin is clipped at the tumor edge |
 
 ### Rendering a video separately
 
@@ -349,7 +349,7 @@ python3 ros_margin_node.py --ros-args \
 | `image_topic` | `/ves_camera/image` | Camera topic to subscribe to |
 | `threshold` | `0.6` | Confidence a pixel needs to be called margin |
 | `ema_alpha` | `0.3` | Temporal smoothing of the confidence map; `1.0` disables it |
-| `spatial_dilate` | `20` | Dilation of the Stage 1 tumor mask before gating |
+| `spatial_dilate` | `0` | Dilation of the Stage 1 tumor mask before gating |
 | `proc_size` | `540` | Frames are resized to this before processing, matching training |
 | `device` | `cuda` | Use `cpu` if no GPU is available |
 
@@ -409,7 +409,7 @@ footage may be lower contrast than the training data. Try `--threshold 0.4`. If
 the tumor itself is not being found, Stage 1 is the problem rather than
 Stage 2; `--no-spatial-constraint` confirms this by disabling the gate.
 
-**The margin is clipped at the tumor edge.** Increase `--spatial-dilate` to 40.
+**The margin is clipped at the tumor edge.** Increase `--spatial-dilate`, e.g. to 20.
 The margin sits directly at the tumor boundary, so a constraint that is too
 tight clips the structure being segmented.
 
@@ -427,6 +427,6 @@ ros_margin_node.py            ROS 2 node: same pipeline on a live camera topic
 infer_sam2_red.py             inference script the wrapper calls
 frames_to_video.py            renders overlay frames into an .mp4
 checkpoints_margin58/         margin weights (Stage 2)
-checkpoints_tumor_binary10/   full-tumor weights (Stage 1)
+checkpoints_tumor_binary11/   full-tumor weights (Stage 1)
 requirements.txt
 ```
