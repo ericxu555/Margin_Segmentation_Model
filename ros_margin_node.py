@@ -126,6 +126,7 @@ class MarginNode(Node):
         self.last = {}             # tag -> (overlay, mask) of the newest frame
         self.n_recorded = 0
         self.t_start = None
+        self.frames_log = None         # frames.csv of the episode being recorded
         self._tool_held = False        # last debounced button state
         self._tool_release_t = None    # when the button first read released
         self._tool_seen = False        # has any joint message arrived
@@ -291,6 +292,13 @@ class MarginNode(Node):
         self._record_frame("margin", vis, mask_u8)
         self._record_frame("tumor", tvis, tmask_u8)
         if self.recording:
+            log = self.frames_log
+            if log is not None:
+                try:
+                    log.write(f"{self.n_recorded},{header.stamp.sec},{header.stamp.nanosec},"
+                              f"{time.time():.6f}\n")
+                except ValueError:     # closed by the release on the other thread
+                    pass
             self.n_recorded += 1
 
     # ------------------------------------------------------------- recording
@@ -319,6 +327,11 @@ class MarginNode(Node):
             self.last = {}
             self.n_recorded = 0
             self.t_start = time.time()
+            # Camera stamp of every recorded frame. This node and the toolhead
+            # node drop different frames while busy, so mask numbers do not line
+            # up between them; the stamps do.
+            self.frames_log = open(os.path.join(self.episode_dir, "frames.csv"), "w")
+            self.frames_log.write("frame,stamp_sec,stamp_nsec,wall_time\n")
             self.recording = True
         return True, f"Recording -> {self.episode_dir}"
 
@@ -332,9 +345,12 @@ class MarginNode(Node):
             writers, last = self.writers, dict(self.last)
             n, t0 = self.n_recorded, self.t_start
             self.writers = {}
+            frames_log, self.frames_log = self.frames_log, None
 
         for w in writers.values():
             w.release()
+        if frames_log is not None:
+            frames_log.close()
         if n == 0:
             msg = "Stopped before any frame arrived; nothing was written."
             self.get_logger().warn(msg)
